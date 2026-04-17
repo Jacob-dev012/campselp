@@ -9,18 +9,18 @@
   <h2>Create Account</h2>
 
   <form id="signupForm">
-    
+
     <input 
       type="email" 
       name="email" 
-      placeholder="Email" 
+      placeholder="Email"
       required
     >
 
     <input 
       type="password" 
       name="password" 
-      placeholder="Password" 
+      placeholder="Password"
       required
     >
 
@@ -30,15 +30,20 @@
       <option value="worker">Worker</option>
     </select>
 
-    <button type="submit">Sign Up</button>
+    <button type="submit" id="signupBtn">Sign Up</button>
+
+    <p id="signupStatus"></p>
 
   </form>
 
   <p>Already have an account? <a href="login.html">Login</a></p>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
 
   <script src="script.js"></script>
+
 </body>
 </html>
