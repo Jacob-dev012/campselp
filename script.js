@@ -13,6 +13,49 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// ------------------ CREATE REQUEST (STUDENT) ------------------
+const requestForm = document.getElementById("requestForm");
+
+if (requestForm) {
+  requestForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Not logged in");
+      return;
+    }
+
+    const title = requestForm.title.value;
+    const description = requestForm.description.value;
+    const pages = requestForm.pages.value;
+    const type = requestForm.type.value;
+    const urgency = requestForm.urgency.value;
+
+    const price = pages * (type === "ppt" ? 40 : 25) * (urgency === "fast" ? 1.5 : 1);
+
+    try {
+      await db.collection("requests").add({
+        uid: user.uid,
+        title,
+        description,
+        pages: Number(pages),
+        type,
+        urgency,
+        price,
+        status: "pending",
+        createdAt: Date.now()
+      });
+
+      alert("Request submitted");
+
+      requestForm.reset();
+
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+}
 
 // ------------------ SIGNUP ------------------
 const signupForm = document.getElementById("signupForm");
