@@ -1,9 +1,10 @@
+
 // ------------------ STOP FORM REFRESH ------------------
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
   signupForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    alert("Signup clicked (backend coming next)");
+    alert("Signup coming soon");
   });
 }
 
@@ -11,11 +12,11 @@ const loginForm = document.getElementById('loginForm');
 if (loginForm) {
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    alert("Login clicked (backend coming next)");
+    alert("Login coming soon");
   });
 }
 
-// ------------------ PRICE CALCULATION ------------------
+// ------------------ PRICE CALCULATION (STUDENT) ------------------
 const pagesInput = document.getElementById('pagesInput');
 const typeSelect = document.getElementById('typeSelect');
 const urgencySelect = document.getElementById('urgencySelect');
@@ -31,12 +32,10 @@ if (pagesInput && typeSelect && urgencySelect && pricePreview) {
     const type = typeSelect.value;
     const urgency = urgencySelect.value;
 
-    let basePrice = type === 'ppt' ? BASE_PPT : BASE_NOTES;
+    let base = type === "ppt" ? BASE_PPT : BASE_NOTES;
+    let multiplier = urgency === "fast" ? 1.5 : 1;
 
-    let multiplier = 1;
-    if (urgency === 'fast') multiplier = 1.5;
-
-    const total = pages * basePrice * multiplier;
+    let total = pages * base * multiplier;
 
     pricePreview.innerText = total;
   }
@@ -46,4 +45,44 @@ if (pagesInput && typeSelect && urgencySelect && pricePreview) {
   urgencySelect.addEventListener('change', calculatePrice);
 
   calculatePrice();
+}
+
+// ------------------ WORKER LOGIC ------------------
+const acceptButtons = document.querySelectorAll('.acceptBtn');
+const myJobsContainer = document.getElementById('myJobs');
+
+let myJobs = [];
+
+if (acceptButtons.length > 0 && myJobsContainer) {
+
+  acceptButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+
+      if (myJobs.length >= 5) {
+        alert("Max 5 jobs reached");
+        return;
+      }
+
+      const jobCard = btn.parentElement;
+
+      const jobData = jobCard.innerHTML;
+
+      myJobs.push(jobData);
+
+      renderJobs();
+
+      jobCard.remove();
+    });
+  });
+
+  function renderJobs() {
+    myJobsContainer.innerHTML = "";
+
+    myJobs.forEach(job => {
+      const div = document.createElement("div");
+      div.className = "job";
+      div.innerHTML = job;
+      myJobsContainer.appendChild(div);
+    });
+  }
 }
