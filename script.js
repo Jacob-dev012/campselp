@@ -1,4 +1,4 @@
-// ------------------ FIREBASE INIT ------------------
+// ================= FIREBASE INIT =================
 const firebaseConfig = {
   apiKey: "AIzaSyDJeborWlMvcEUwVjo1tKvP-9rso7pK-6M",
   authDomain: "campselp.firebaseapp.com",
@@ -13,51 +13,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ------------------ CREATE REQUEST (STUDENT) ------------------
-const requestForm = document.getElementById("requestForm");
 
-if (requestForm) {
-  requestForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const user = auth.currentUser;
-    if (!user) {
-      alert("Not logged in");
-      return;
-    }
-
-    const title = requestForm.title.value;
-    const description = requestForm.description.value;
-    const pages = requestForm.pages.value;
-    const type = requestForm.type.value;
-    const urgency = requestForm.urgency.value;
-
-    const price = pages * (type === "ppt" ? 40 : 25) * (urgency === "fast" ? 1.5 : 1);
-
-    try {
-      await db.collection("requests").add({
-        uid: user.uid,
-        title,
-        description,
-        pages: Number(pages),
-        type,
-        urgency,
-        price,
-        status: "pending",
-        createdAt: Date.now()
-      });
-
-      alert("Request submitted");
-
-      requestForm.reset();
-
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-}
-
-// ------------------ SIGNUP ------------------
+// ================= SIGNUP =================
 const signupForm = document.getElementById("signupForm");
 
 if (signupForm) {
@@ -79,8 +36,6 @@ if (signupForm) {
         createdAt: Date.now()
       });
 
-      alert("Signup successful");
-
       if (role === "student") {
         window.location = "student.html";
       } else {
@@ -94,7 +49,7 @@ if (signupForm) {
 }
 
 
-// ------------------ LOGIN ------------------
+// ================= LOGIN =================
 const loginForm = document.getElementById("loginForm");
 
 if (loginForm) {
@@ -135,7 +90,44 @@ if (loginForm) {
 }
 
 
-// ------------------ PRICE CALCULATION ------------------
+// ================= STUDENT REQUEST SYSTEM =================
+const requestForm = document.getElementById("requestForm");
+
+if (requestForm) {
+  requestForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) return alert("Not logged in");
+
+    const title = requestForm.title.value;
+    const description = requestForm.description.value;
+    const pages = Number(requestForm.pages.value);
+    const type = requestForm.type.value;
+    const urgency = requestForm.urgency.value;
+
+    const price = pages * (type === "ppt" ? 40 : 25) * (urgency === "fast" ? 1.5 : 1);
+
+    await db.collection("requests").add({
+      uid: user.uid,
+      title,
+      description,
+      pages,
+      type,
+      urgency,
+      price,
+      status: "pending",
+      workerId: null,
+      createdAt: Date.now()
+    });
+
+    alert("Request submitted");
+    requestForm.reset();
+  });
+}
+
+
+// ================= PRICE PREVIEW =================
 const pagesInput = document.getElementById("pagesInput");
 const typeSelect = document.getElementById("typeSelect");
 const urgencySelect = document.getElementById("urgencySelect");
@@ -143,16 +135,13 @@ const pricePreview = document.getElementById("pricePreview");
 
 if (pagesInput && typeSelect && urgencySelect && pricePreview) {
 
-  const BASE_NOTES = 25;
-  const BASE_PPT = 40;
-
   function calc() {
-    const pages = parseInt(pagesInput.value) || 0;
+    const pages = Number(pagesInput.value) || 0;
     const type = typeSelect.value;
     const urgency = urgencySelect.value;
 
-    let base = type === "ppt" ? BASE_PPT : BASE_NOTES;
-    let multiplier = urgency === "fast" ? 1.5 : 1;
+    const base = type === "ppt" ? 40 : 25;
+    const multiplier = urgency === "fast" ? 1.5 : 1;
 
     pricePreview.innerText = pages * base * multiplier;
   }
@@ -165,48 +154,127 @@ if (pagesInput && typeSelect && urgencySelect && pricePreview) {
 }
 
 
-// ------------------ WORKER (LOCAL FOR NOW) ------------------
-const acceptButtons = document.querySelectorAll(".acceptBtn");
-const myJobsContainer = document.getElementById("myJobs");
+// ================= WORKER SYSTEM (REAL FIRESTORE) =================
+const availableRequests = document.getElementById("availableRequests");
+const myJobs = document.getElementById("myJobs");
 
-let myJobs = [];
+let workerJobs = [];
 
-if (acceptButtons.length > 0 && myJobsContainer) {
-  acceptButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
+if (availableRequests) {
+  db.collection("requests")
+    .where("status", "==", "pending")
+    .onSnapshot((snap) => {
 
-      if (myJobs.length >= 5) {
-        alert("Max 5 jobs reached");
-        return;
-      }
+      availableRequests.innerHTML = "";
 
-      myJobs.push(btn.parentElement.innerHTML);
-      btn.parentElement.remove();
+      snap.forEach(doc => {
+        const r = doc.data();
 
-      renderJobs();
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <p><strong>${r.title}</strong></p>
+          <p>${r.pages} pages | ${r.type}</p>
+          <p>GH₵ ${r.price}</p>
+          <button class="acceptBtn">Accept</button>
+        `;
+
+        div.querySelector(".acceptBtn").addEventListener("click", async () => {
+
+          if (workerJobs.length >= 5) {
+            alert("Max 5 jobs reached");
+            return;
+          }
+
+          await db.collection("requests").doc(doc.id).update({
+            status: "assigned",
+            workerId: auth.currentUser.uid
+          });
+
+          workerJobs.push(doc.id);
+        });
+
+        availableRequests.appendChild(div);
+      });
     });
+}
+
+
+// ================= ADMIN SYSTEM =================
+const pendingPayments = document.getElementById("pendingPayments");
+const allRequests = document.getElementById("allRequests");
+const usersList = document.getElementById("usersList");
+
+if (pendingPayments || allRequests || usersList) {
+
+  // REQUESTS
+  db.collection("requests").onSnapshot((snap) => {
+
+    let requests = [];
+
+    snap.forEach(doc => {
+      requests.push({ id: doc.id, ...doc.data() });
+    });
+
+    if (pendingPayments) {
+      pendingPayments.innerHTML = "";
+
+      requests.filter(r => r.status === "pending").forEach(r => {
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <p>${r.title}</p>
+          <p>GH₵ ${r.price}</p>
+          <button onclick="approveRequest('${r.id}')">Approve</button>
+        `;
+        pendingPayments.appendChild(div);
+      });
+    }
+
+    if (allRequests) {
+      allRequests.innerHTML = "";
+
+      requests.forEach(r => {
+        allRequests.innerHTML += `
+          <div>
+            <p>${r.title} - ${r.status}</p>
+          </div>
+        `;
+      });
+    }
   });
 
-  function renderJobs() {
-    myJobsContainer.innerHTML = "";
+  // USERS
+  db.collection("users").onSnapshot((snap) => {
 
-    myJobs.forEach(job => {
+    if (!usersList) return;
+
+    usersList.innerHTML = "";
+
+    snap.forEach(doc => {
+      const u = doc.data();
+
       const div = document.createElement("div");
-      div.className = "job";
-      div.innerHTML = job;
-      myJobsContainer.appendChild(div);
+      div.innerHTML = `
+        <p>${u.email} (${u.role})</p>
+        <button onclick="toggleBlock('${doc.id}', ${u.blocked})">
+          ${u.blocked ? "Unblock" : "Block"}
+        </button>
+      `;
+
+      usersList.appendChild(div);
     });
-  }
+  });
 }
 
 
-// ------------------ ADMIN (PLACEHOLDER FOR NOW) ------------------
-const pendingPaymentsEl = document.getElementById("pendingPayments");
-const allRequestsEl = document.getElementById("allRequests");
-const usersListEl = document.getElementById("usersList");
+// ================= ADMIN ACTIONS =================
+window.approveRequest = async function(id) {
+  await db.collection("requests").doc(id).update({
+    status: "approved"
+  });
+};
 
-if (pendingPaymentsEl && allRequestsEl && usersListEl) {
-  pendingPaymentsEl.innerHTML = "<p>Waiting for data...</p>";
-  allRequestsEl.innerHTML = "<p>Waiting for data...</p>";
-  usersListEl.innerHTML = "<p>Waiting for data...</p>";
-}
+window.toggleBlock = async function(id, blocked) {
+  await db.collection("users").doc(id).update({
+    blocked: !blocked
+  });
+};
