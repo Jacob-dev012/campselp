@@ -283,3 +283,39 @@ window.toggleBlock = async function(id, blocked) {
     blocked: !blocked
   });
 };
+
+// ================= LOAD STUDENT REQUESTS =================
+const requestsList = document.getElementById("requestsList");
+
+if (requestsList) {
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) return;
+
+    db.collection("requests")
+      .where("uid", "==", user.uid)
+      .onSnapshot((snap) => {
+
+        requestsList.innerHTML = "";
+
+        if (snap.empty) {
+          requestsList.innerHTML = "<p>No requests yet</p>";
+          return;
+        }
+
+        snap.forEach(doc => {
+          const r = doc.data();
+
+          const div = document.createElement("div");
+          div.innerHTML = `
+            <p><strong>${r.title}</strong></p>
+            <p>Status: ${r.status}</p>
+            <p>Price: GH₵ ${r.price}</p>
+          `;
+
+          requestsList.appendChild(div);
+        });
+      });
+  });
+
+}
