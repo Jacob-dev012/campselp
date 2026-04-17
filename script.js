@@ -1,5 +1,18 @@
 
-// ------------------ STOP FORM REFRESH ------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyDJeborWlMvcEUwVjo1tKvP-9rso7pK-6M",
+  authDomain: "campselp.firebaseapp.com",
+  projectId: "campselp",
+  storageBucket: "campselp.firebasestorage.app",
+  messagingSenderId: "358438554046",
+  appId: "1:358438554046:web:a774aef36e2f24edcc11ef"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();// ------------------ STOP FORM REFRESH ------------------
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
   signupForm.addEventListener('submit', (e) => {
