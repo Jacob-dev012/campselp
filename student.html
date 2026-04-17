@@ -1,1 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+  <h2>Student Dashboard</h2>
+
+  <form id="requestForm">
+
+    <input 
+      type="text" 
+      name="title" 
+      placeholder="Request Title" 
+      required
+    >
+
+    <textarea 
+      name="description" 
+      placeholder="Describe your task"
+    ></textarea>
+
+    <input 
+      type="number" 
+      name="pages" 
+      id="pagesInput"
+      placeholder="Number of pages" 
+      required
+    >
+
+    <select name="type" id="typeSelect">
+      <option value="notes">Notes</option>
+      <option value="ppt">PPT</option>
+    </select>
+
+    <select name="urgency" id="urgencySelect">
+      <option value="normal">Normal</option>
+      <option value="fast">Fast</option>
+    </select>
+
+    <p>Estimated Price: <span id="pricePreview">0</span></p>
+
+    <button type="submit">Submit Request</button>
+
+  </form>
+
+  <h3>Your Requests</h3>
+  <div id="requestsList"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
