@@ -56,39 +56,25 @@ if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = loginForm.email.value.trim();
-    const password = loginForm.password.value.trim();
+    const email = loginForm.querySelector("input[name='email']").value;
+    const password = loginForm.querySelector("input[name='password']").value;
 
     try {
       const userCred = await auth.signInWithEmailAndPassword(email, password);
       const user = userCred.user;
 
-      const doc = await db.collection("users").doc(user.uid).get();
+      // WAIT for Firestore user data
+      const docRef = await db.collection("users").doc(user.uid).get();
 
-      if (!doc.exists) {
-        alert("User not found");
+      if (!docRef.exists) {
+        alert("User profile missing in database");
         return;
       }
 
-      const data = doc.data();
+      const data = docRef.data();
 
-      if (data.blocked) {
-        alert("Account blocked");
-        return;
-      }
-
-      if (data.role === "student") {
-        window.location = "student.html";
-      } else {
-        window.location = "worker.html";
-      }
-
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-}
-
+      if (data
+  
 
 // ================= STUDENT REQUEST SYSTEM =================
 const requestForm = document.getElementById("requestForm");
