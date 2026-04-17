@@ -22,6 +22,85 @@ const typeSelect = document.getElementById('typeSelect');
 const urgencySelect = document.getElementById('urgencySelect');
 const pricePreview = document.getElementById('pricePreview');
 
+// ------------------ ADMIN LOGIC ------------------
+
+// helpers
+const pendingPaymentsEl = document.getElementById('pendingPayments');
+const allRequestsEl = document.getElementById('allRequests');
+const usersListEl = document.getElementById('usersList');
+
+// sample local state (will later come from Firebase)
+let requests = [];
+let users = [];
+
+// render admin dashboard
+function renderAdmin() {
+  if (!pendingPaymentsEl || !allRequestsEl || !usersListEl) return;
+
+  // Pending Payments (awaiting_payment)
+  pendingPaymentsEl.innerHTML = "";
+
+  const pending = requests.filter(r => r.status === "awaiting_payment");
+
+  pending.forEach(r => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p><strong>${r.title}</strong></p>
+      <p>${r.studentEmail || "unknown"}</p>
+      <button onclick="approvePayment('${r.id}')">Approve</button>
+      <button onclick="rejectPayment('${r.id}')">Reject</button>
+    `;
+    pendingPaymentsEl.appendChild(div);
+  });
+
+  // All Requests
+  allRequestsEl.innerHTML = "";
+
+  requests.forEach(r => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p><strong>${r.title}</strong> - ${r.status}</p>
+      <p>${r.type} | ${r.pages} pages</p>
+    `;
+    allRequestsEl.appendChild(div);
+  });
+
+  // Users
+  usersListEl.innerHTML = "";
+
+  users.forEach(u => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p>${u.email} (${u.role})</p>
+      <button onclick="toggleBlock('${u.id}')">
+        ${u.blocked ? "Unblock" : "Block"}
+      </button>
+    `;
+    usersListEl.appendChild(div);
+  });
+}
+
+// admin actions
+window.approvePayment = function(id) {
+  const req = requests.find(r => r.id === id);
+  if (req) req.status = "approved";
+  renderAdmin();
+};
+
+window.rejectPayment = function(id) {
+  const req = requests.find(r => r.id === id);
+  if (req) req.status = "rejected";
+  renderAdmin();
+};
+
+window.toggleBlock = function(id) {
+  const user = users.find(u => u.id === id);
+  if (user) user.blocked = !user.blocked;
+  renderAdmin();
+};
+
+// initial render
+renderAdmin();
 if (pagesInput && typeSelect && urgencySelect && pricePreview) {
 
   const BASE_NOTES = 25;
