@@ -1,4 +1,4 @@
-
+// ------------------ FIREBASE INIT ------------------
 const firebaseConfig = {
   apiKey: "AIzaSyDJeborWlMvcEUwVjo1tKvP-9rso7pK-6M",
   authDomain: "campselp.firebaseapp.com",
@@ -8,118 +8,102 @@ const firebaseConfig = {
   appId: "1:358438554046:web:a774aef36e2f24edcc11ef"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
-const db = firebase.firestore();// ------------------ STOP FORM REFRESH ------------------
-const signupForm = document.getElementById('signupForm');
+const db = firebase.firestore();
+
+
+// ------------------ SIGNUP ------------------
+const signupForm = document.getElementById("signupForm");
+
 if (signupForm) {
-  signupForm.addEventListener('submit', (e) => {
+  signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    alert("Signup coming soon");
+
+    const email = signupForm.email.value.trim();
+    const password = signupForm.password.value.trim();
+    const role = signupForm.role.value;
+
+    try {
+      const userCred = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCred.user;
+
+      await db.collection("users").doc(user.uid).set({
+        email,
+        role,
+        blocked: false,
+        createdAt: Date.now()
+      });
+
+      alert("Signup successful");
+
+      if (role === "student") {
+        window.location = "student.html";
+      } else {
+        window.location = "worker.html";
+      }
+
+    } catch (err) {
+      alert(err.message);
+    }
   });
 }
 
-const loginForm = document.getElementById('loginForm');
+
+// ------------------ LOGIN ------------------
+const loginForm = document.getElementById("loginForm");
+
 if (loginForm) {
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    alert("Login coming soon");
+
+    const email = loginForm.email.value.trim();
+    const password = loginForm.password.value.trim();
+
+    try {
+      const userCred = await auth.signInWithEmailAndPassword(email, password);
+      const user = userCred.user;
+
+      const doc = await db.collection("users").doc(user.uid).get();
+
+      if (!doc.exists) {
+        alert("User not found");
+        return;
+      }
+
+      const data = doc.data();
+
+      if (data.blocked) {
+        alert("Account blocked");
+        return;
+      }
+
+      if (data.role === "student") {
+        window.location = "student.html";
+      } else {
+        window.location = "worker.html";
+      }
+
+    } catch (err) {
+      alert(err.message);
+    }
   });
 }
 
-// ------------------ PRICE CALCULATION (STUDENT) ------------------
-const pagesInput = document.getElementById('pagesInput');
-const typeSelect = document.getElementById('typeSelect');
-const urgencySelect = document.getElementById('urgencySelect');
-const pricePreview = document.getElementById('pricePreview');
 
-// ------------------ ADMIN LOGIC ------------------
+// ------------------ PRICE CALCULATION ------------------
+const pagesInput = document.getElementById("pagesInput");
+const typeSelect = document.getElementById("typeSelect");
+const urgencySelect = document.getElementById("urgencySelect");
+const pricePreview = document.getElementById("pricePreview");
 
-// helpers
-const pendingPaymentsEl = document.getElementById('pendingPayments');
-const allRequestsEl = document.getElementById('allRequests');
-const usersListEl = document.getElementById('usersList');
-
-// sample local state (will later come from Firebase)
-let requests = [];
-let users = [];
-
-// render admin dashboard
-function renderAdmin() {
-  if (!pendingPaymentsEl || !allRequestsEl || !usersListEl) return;
-
-  // Pending Payments (awaiting_payment)
-  pendingPaymentsEl.innerHTML = "";
-
-  const pending = requests.filter(r => r.status === "awaiting_payment");
-
-  pending.forEach(r => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p><strong>${r.title}</strong></p>
-      <p>${r.studentEmail || "unknown"}</p>
-      <button onclick="approvePayment('${r.id}')">Approve</button>
-      <button onclick="rejectPayment('${r.id}')">Reject</button>
-    `;
-    pendingPaymentsEl.appendChild(div);
-  });
-
-  // All Requests
-  allRequestsEl.innerHTML = "";
-
-  requests.forEach(r => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p><strong>${r.title}</strong> - ${r.status}</p>
-      <p>${r.type} | ${r.pages} pages</p>
-    `;
-    allRequestsEl.appendChild(div);
-  });
-
-  // Users
-  usersListEl.innerHTML = "";
-
-  users.forEach(u => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p>${u.email} (${u.role})</p>
-      <button onclick="toggleBlock('${u.id}')">
-        ${u.blocked ? "Unblock" : "Block"}
-      </button>
-    `;
-    usersListEl.appendChild(div);
-  });
-}
-
-// admin actions
-window.approvePayment = function(id) {
-  const req = requests.find(r => r.id === id);
-  if (req) req.status = "approved";
-  renderAdmin();
-};
-
-window.rejectPayment = function(id) {
-  const req = requests.find(r => r.id === id);
-  if (req) req.status = "rejected";
-  renderAdmin();
-};
-
-window.toggleBlock = function(id) {
-  const user = users.find(u => u.id === id);
-  if (user) user.blocked = !user.blocked;
-  renderAdmin();
-};
-
-// initial render
-renderAdmin();
 if (pagesInput && typeSelect && urgencySelect && pricePreview) {
 
   const BASE_NOTES = 25;
   const BASE_PPT = 40;
 
-  function calculatePrice() {
+  function calc() {
     const pages = parseInt(pagesInput.value) || 0;
     const type = typeSelect.value;
     const urgency = urgencySelect.value;
@@ -127,43 +111,36 @@ if (pagesInput && typeSelect && urgencySelect && pricePreview) {
     let base = type === "ppt" ? BASE_PPT : BASE_NOTES;
     let multiplier = urgency === "fast" ? 1.5 : 1;
 
-    let total = pages * base * multiplier;
-
-    pricePreview.innerText = total;
+    pricePreview.innerText = pages * base * multiplier;
   }
 
-  pagesInput.addEventListener('input', calculatePrice);
-  typeSelect.addEventListener('change', calculatePrice);
-  urgencySelect.addEventListener('change', calculatePrice);
+  pagesInput.addEventListener("input", calc);
+  typeSelect.addEventListener("change", calc);
+  urgencySelect.addEventListener("change", calc);
 
-  calculatePrice();
+  calc();
 }
 
-// ------------------ WORKER LOGIC ------------------
-const acceptButtons = document.querySelectorAll('.acceptBtn');
-const myJobsContainer = document.getElementById('myJobs');
+
+// ------------------ WORKER (LOCAL FOR NOW) ------------------
+const acceptButtons = document.querySelectorAll(".acceptBtn");
+const myJobsContainer = document.getElementById("myJobs");
 
 let myJobs = [];
 
 if (acceptButtons.length > 0 && myJobsContainer) {
-
-  acceptButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
+  acceptButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
 
       if (myJobs.length >= 5) {
         alert("Max 5 jobs reached");
         return;
       }
 
-      const jobCard = btn.parentElement;
-
-      const jobData = jobCard.innerHTML;
-
-      myJobs.push(jobData);
+      myJobs.push(btn.parentElement.innerHTML);
+      btn.parentElement.remove();
 
       renderJobs();
-
-      jobCard.remove();
     });
   });
 
@@ -177,4 +154,16 @@ if (acceptButtons.length > 0 && myJobsContainer) {
       myJobsContainer.appendChild(div);
     });
   }
+}
+
+
+// ------------------ ADMIN (PLACEHOLDER FOR NOW) ------------------
+const pendingPaymentsEl = document.getElementById("pendingPayments");
+const allRequestsEl = document.getElementById("allRequests");
+const usersListEl = document.getElementById("usersList");
+
+if (pendingPaymentsEl && allRequestsEl && usersListEl) {
+  pendingPaymentsEl.innerHTML = "<p>Waiting for data...</p>";
+  allRequestsEl.innerHTML = "<p>Waiting for data...</p>";
+  usersListEl.innerHTML = "<p>Waiting for data...</p>";
 }
