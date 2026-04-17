@@ -37,9 +37,9 @@ if (signupForm) {
       });
 
       if (role === "student") {
-        window.location = "student.html";
+        window.location.href = "student.html";
       } else {
-        window.location = "worker.html";
+        window.location.href = "worker.html";
       }
 
     } catch (err) {
@@ -56,25 +56,42 @@ if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = loginForm.querySelector("input[name='email']").value;
-    const password = loginForm.querySelector("input[name='password']").value;
+    const email = loginForm.email.value.trim();
+    const password = loginForm.password.value.trim();
 
     try {
       const userCred = await auth.signInWithEmailAndPassword(email, password);
       const user = userCred.user;
 
-      // WAIT for Firestore user data
-      const docRef = await db.collection("users").doc(user.uid).get();
+      const docSnap = await db.collection("users").doc(user.uid).get();
 
-      if (!docRef.exists) {
-        alert("User profile missing in database");
+      if (!docSnap.exists) {
+        alert("User profile missing");
         return;
       }
 
-      const data = docRef.data();
+      const data = docSnap.data();
 
-      if (data
-  
+      if (data.blocked === true) {
+        alert("Account blocked");
+        await auth.signOut();
+        return;
+      }
+
+      if (data.role === "student") {
+        window.location.href = "student.html";
+      } else if (data.role === "worker") {
+        window.location.href = "worker.html";
+      } else {
+        alert("Invalid role");
+      }
+
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+}
+
 
 // ================= STUDENT REQUEST SYSTEM =================
 const requestForm = document.getElementById("requestForm");
@@ -140,9 +157,8 @@ if (pagesInput && typeSelect && urgencySelect && pricePreview) {
 }
 
 
-// ================= WORKER SYSTEM (REAL FIRESTORE) =================
+// ================= WORKER SYSTEM =================
 const availableRequests = document.getElementById("availableRequests");
-const myJobs = document.getElementById("myJobs");
 
 let workerJobs = [];
 
@@ -171,6 +187,11 @@ if (availableRequests) {
             return;
           }
 
+          if (!auth.currentUser) {
+            alert("Not logged in");
+            return;
+          }
+
           await db.collection("requests").doc(doc.id).update({
             status: "assigned",
             workerId: auth.currentUser.uid
@@ -192,7 +213,6 @@ const usersList = document.getElementById("usersList");
 
 if (pendingPayments || allRequests || usersList) {
 
-  // REQUESTS
   db.collection("requests").onSnapshot((snap) => {
 
     let requests = [];
@@ -228,7 +248,6 @@ if (pendingPayments || allRequests || usersList) {
     }
   });
 
-  // USERS
   db.collection("users").onSnapshot((snap) => {
 
     if (!usersList) return;
