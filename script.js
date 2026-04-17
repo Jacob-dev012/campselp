@@ -1,3 +1,7 @@
+if (typeof firebase === "undefined") {
+  throw new Error("Firebase not loaded. Check script order.");
+}
+
 // ================= FIREBASE INIT =================
 const firebaseConfig = {
   apiKey: "AIzaSyDJeborWlMvcEUwVjo1tKvP-9rso7pK-6M",
